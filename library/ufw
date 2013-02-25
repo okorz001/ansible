@@ -39,6 +39,7 @@ def idiotproof(module, params):
 def main():
     spec = {}
     spec['state'] = dict(default='present', choices=['absent', 'present'])
+    spec['insert'] = dict(default=None)
     spec['policy'] = dict(required=True)
     spec['dir'] = dict(default=None)
     spec['iface'] = dict(default=None)
@@ -62,6 +63,11 @@ def main():
     # Delete?
     if params["state"] == 'absent':
         cmd.append("delete")
+
+    # Insert NUM.
+    if params["insert"] != None:
+        cmd.append("insert")
+        cmd.append(params["insert"])
 
     # Policy.
     cmd.append(params["policy"])
