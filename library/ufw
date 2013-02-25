@@ -22,10 +22,26 @@
 DOCUMENTATION='''
 '''
 
+def idiotproof(module, params):
+    # Force user to specify at least one of the following keys as this likely
+    # indicates that an error has been made. Otherwise, this module would
+    # insert a rule for all packets! Note that is this behavior is desired,
+    # users can specify either from=any or to=any to override this check.
+    keys = {'dir', 'from', 'from_port', 'to', 'to_port'}
+    for key in keys:
+        if params[key] != None:
+            return
+
+    msg = "At least one of the following keys is required: "
+    msg += ", ".join(keys)
+    module.fail_json(msg=msg)
+
 def main():
     spec = {}
     spec['state'] = dict(default='present', choices=['absent', 'present'])
     spec['policy'] = dict(required=True)
+    spec['dir'] = dict(default=None)
+    spec['iface'] = dict(default=None)
     spec['log'] = dict(default='no', choices=['no', 'yes', 'all'])
     spec['proto'] = dict(default=None)
     # from cannot be used a keyword arg to dict().
@@ -37,15 +53,7 @@ def main():
     module = AnsibleModule(argument_spec=spec)
     params = module.params
 
-    # Force user to specify at least one of the following keys as this likely
-    # indicates that an error has been made. Otherwise, this module would
-    # insert a rule for all packets! Note that is this behavior is desired,
-    # users can specify either from=any or to=any to override this check.
-    if (params['from'] == None and params['from_port'] == None and
-            params['to'] == None and params['to_port'] == None):
-        msg = ("At least one of the following keys is required: "
-                "'from', 'from_port', 'to', 'to_port'")
-        module.fail_json(msg=msg)
+    idiotproof(module, params)
 
     # Build argument vector.
     # Find ufw, or fail.
@@ -57,6 +65,15 @@ def main():
 
     # Policy.
     cmd.append(params["policy"])
+
+    # Direction.
+    if params["dir"] != None:
+        cmd.append(params["dir"])
+
+    # Interface.
+    if params["iface"] != None:
+        cmd.append("on")
+        cmd.append(params["iface"])
 
     # Logging.
     if params["log"] == 'yes':
